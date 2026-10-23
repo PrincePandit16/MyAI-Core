@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+backend/.venv/
+.env
+backend/.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+.tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+EOF

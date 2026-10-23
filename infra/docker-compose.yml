@@ -1,0 +1,57 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://assistant:assistant@postgres:5432/assistant
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: assistant
+      POSTGRES_USER: assistant
+      POSTGRES_PASSWORD: assistant
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assistant -d assistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    profiles: ["data"]
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  traefik:
+    profiles: ["proxy"]
+    image: traefik:v3.0
+    command:
+      - --api.insecure=true
+      - --providers.docker=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "8080:8080"
+      - "8081:80"
+
+volumes:
+  postgres_data:
