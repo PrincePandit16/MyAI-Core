@@ -23,7 +23,128 @@ docker compose -f infra/docker-compose.yml up --build
 - Frontend: http://localhost:5173
 - Backend health check: http://localhost:8000/health
 - FAISS runs as a library inside the backend container; it does not need a separate service.
-- The frontend chat form can test the connection to the backend. The current chat endpoint echoes the submitted message and does not save chat messages or create users.
+- The chat endpoint forwards prompts to the configured language model. Chat messages are not persisted.
+
+### Language model setup
+
+The backend supports three providers: `http_tgi`, `local_llama`, and the
+existing `groq` provider. Set `LLM_MODE` and the provider settings in
+`backend/.env` (see [`backend/.env.example`](backend/.env.example)). Do not
+replace an existing `.env` file just to apply the example; add or change only
+the settings you need. Changes to environment settings require restarting the
+backend.
+
+#### Hugging Face TGI
+
+Start a TGI server using the
+[official TGI documentation](https://huggingface.co/docs/text-generation-inference/index).
+For example, on a Linux host with NVIDIA Container Toolkit and Docker:
+
+```sh
+model=HuggingFaceH4/zephyr-7b-beta
+docker run --gpus all --shm-size 1g -p 8080:80 \
+  -v "$HOME/.cache/huggingface:/data" \
+  ghcr.io/huggingface/text-generation-inference:3.3.5 \
+  --model-id "$model"
+```
+
+For a backend running directly on the host, configure:
+
+```dotenv
+LLM_MODE=http_tgi
+TGI_ENDPOINT=http://localhost:8080/generate
+LLM_TIMEOUT_SECONDS=60
+LLM_MAX_RETRIES=3
+LLM_MAX_NEW_TOKENS=256
+```
+
+For the Compose backend, TGI is expected to be running on the Docker host.
+Compose defaults to `http://host.docker.internal:8080/generate`; override
+`TGI_ENDPOINT` if TGI is elsewhere. Start the application from the repository
+root:
+
+```powershell
+$env:LLM_MODE = "http_tgi"
+$env:TGI_ENDPOINT = "http://host.docker.internal:8080/generate"
+docker compose -f infra/docker-compose.yml up --build
+```
+
+Test TGI directly:
+
+```powershell
+curl.exe -X POST http://localhost:8080/generate `
+  -H "Content-Type: application/json" `
+  -d '{"inputs":"Say hello","parameters":{"max_new_tokens":64}}'
+```
+
+#### Local llama.cpp
+
+Build/install a llama.cpp CLI binary by following the
+[llama.cpp build instructions](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md)
+and download a compatible GGUF model. The binary and model must be accessible
+to the backend process. For example, configure `backend/.env` for a Windows
+host with:
+
+```dotenv
+LLM_MODE=local_llama
+LLAMA_BINARY_PATH=C:\path\to\llama.cpp\build\bin\Release\llama-cli.exe
+LLAMA_MODEL_PATH=C:\path\to\models\model.gguf
+LLM_TIMEOUT_SECONDS=60
+LLM_MAX_NEW_TOKENS=256
+```
+
+The Windows build can be created from a Visual Studio Developer PowerShell:
+
+```powershell
+git clone https://github.com/ggml-org/llama.cpp.git
+Set-Location llama.cpp
+cmake -B build
+cmake --build build --config Release
+```
+
+Set `LLAMA_BINARY_PATH` to the resulting `llama-cli.exe`, set
+`LLAMA_MODEL_PATH` to the downloaded GGUF model, and run the backend from
+`backend/`:
+
+```powershell
+$env:LLM_MODE = "local_llama"
+$env:LLAMA_BINARY_PATH = "C:\path\to\llama.cpp\build\bin\Release\llama-cli.exe"
+$env:LLAMA_MODEL_PATH = "C:\path\to\models\model.gguf"
+python -m uvicorn app.main:app --reload
+```
+
+This provider launches llama.cpp for one turn per request with a configured
+generation limit and no prompt echo; there is no separate llama.cpp server to
+start for this mode. On Linux or macOS, build the corresponding binary and use
+its binary/model paths.
+The standard Compose backend image does not bundle llama.cpp or a model; use a
+custom image that includes them and set `LLAMA_BINARY_PATH` and
+`LLAMA_MODEL_PATH` to paths inside that container if running this mode in
+Compose.
+
+#### Test chat through the backend
+
+With the backend running and a provider available, send a request:
+
+```powershell
+curl.exe -X POST http://localhost:8000/api/chat `
+  -H "Content-Type: application/json" `
+  -d '{"session_id":"phase6-test","prompt":"Say hello"}'
+```
+
+The response contains the model output in `response`. Provider failures return
+HTTP 502 rather than a success-shaped chat response. To test a real configured
+provider from the repository root, run:
+
+```powershell
+python backend\scripts\test_llm_client.py
+```
+
+Automated adapter and route tests can be run with:
+
+```powershell
+python -m pytest backend/tests -q
+```
 
 PostgreSQL starts with the default Compose stack. Start Redis (an optional service) with:
 

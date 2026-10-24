@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     jwt_access_token_expire_minutes: int = 30
 
+    # LLM Configuration
+    llm_mode: Literal["local_llama", "http_tgi", "groq"] = "local_llama"
+    tgi_endpoint: str = "http://localhost:8080/generate"
+    llama_binary_path: str = "./llama-cli"
+    llama_model_path: str = ""
+    llm_timeout_seconds: float = Field(default=60.0, gt=0)
+    llm_max_retries: int = Field(default=3, ge=1)
+    llm_max_new_tokens: int = Field(default=256, gt=0)
+    groq_api_key: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

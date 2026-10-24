@@ -75,8 +75,8 @@ export default function Chat({ onLogout }: ChatProps) {
             <div className="m-auto max-w-md text-center">
               <h2 className="text-lg font-medium">What can I help with?</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Send a message to try the assistant. The current backend echoes
-                your message and does not save chat messages.
+                Send a message to chat with the configured language model.
+                Messages are not saved after this session.
               </p>
             </div>
           ) : (

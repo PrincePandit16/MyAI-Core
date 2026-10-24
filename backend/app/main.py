@@ -1,10 +1,11 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from app.api.auth import router as auth_router
 from app.core.config import settings
+from app.services.llm_client import llm_client
 
 logging.basicConfig(
     level=settings.log_level,
@@ -31,6 +32,14 @@ def health() -> dict[str, str]:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(request: ChatRequest) -> ChatResponse:
+async def chat(request: ChatRequest) -> ChatResponse:
     logger.info("Received chat request for session %s", request.session_id)
-    return ChatResponse(response=request.prompt)
+    try:
+        response_text = await llm_client.generate(request.prompt)
+        return ChatResponse(response=response_text)
+    except Exception as exc:
+        logger.exception("Error during LLM generation")
+        raise HTTPException(
+            status_code=502,
+            detail="LLM generation failed",
+        ) from exc

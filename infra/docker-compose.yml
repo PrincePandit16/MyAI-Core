@@ -3,12 +3,21 @@ services:
     build:
       context: ../backend
     environment:
+      LLM_MODE: ${LLM_MODE:-http_tgi}
+      TGI_ENDPOINT: ${TGI_ENDPOINT:-http://host.docker.internal:8080/generate}
+      LLAMA_BINARY_PATH: ${LLAMA_BINARY_PATH:-/usr/local/bin/llama-cli}
+      LLAMA_MODEL_PATH: ${LLAMA_MODEL_PATH:-/models/model.gguf}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-3}
+      LLM_MAX_NEW_TOKENS: ${LLM_MAX_NEW_TOKENS:-256}
       DATABASE_URL: postgresql+psycopg://assistant:assistant@postgres:5432/assistant
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   frontend:
     build:
