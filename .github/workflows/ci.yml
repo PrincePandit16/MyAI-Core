@@ -13,12 +13,10 @@ jobs:
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v5
-      - name: Create environment and install test dependencies
-        run: |
-          uv venv backend/.venv
-          uv pip install --python backend/.venv/bin/python -r backend/requirements-dev.txt
+      - name: Install backend dependencies
+        run: uv sync --project backend --locked --group dev
       - name: Run backend tests
-        run: backend/.venv/bin/pytest backend/tests
+        run: uv run --project backend --locked pytest backend/tests
 
   frontend-build:
     runs-on: ubuntu-latest

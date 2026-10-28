@@ -1,6 +1,6 @@
 # Personal AI Assistant
 
-A local-development starter for a personal AI assistant, with a FastAPI backend, a React + Vite + TypeScript frontend, and FAISS available in the backend for single-node vector search.
+A local-development starter for a personal AI assistant, with a FastAPI backend, a React + Vite + TypeScript frontend, and vector search integrations for FAISS and Milvus.
 
 ## Run locally
 
@@ -9,9 +9,8 @@ Prerequisites: Docker with the Compose plugin.
 To run the backend directly during development:
 
 ```sh
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv sync --project backend
+uv run --project backend uvicorn app.main:app --reload
 ```
 
 From the repository root:
@@ -22,8 +21,29 @@ docker compose -f infra/docker-compose.yml up --build
 
 - Frontend: http://localhost:5173
 - Backend health check: http://localhost:8000/health
-- FAISS runs as a library inside the backend container; it does not need a separate service.
+- FAISS runs as a library inside the backend container; Milvus runs as a separate service.
 - The chat endpoint forwards prompts to the configured language model. Chat messages are not persisted.
+
+### Document embeddings and search
+
+The backend can embed Markdown documents with
+`sentence-transformers/all-MiniLM-L6-v2` and store them in a Milvus collection.
+Install the backend dependencies with `uv sync --project backend` and make a
+Milvus server available at
+`http://localhost:19530` (or set `MILVUS_URI` to your server address). The
+optional `MILVUS_TOKEN` is used for authenticated Milvus servers.
+
+From the repository root, index Markdown files recursively:
+
+```powershell
+uv run --project backend python backend\scripts\index_docs.py path\to\markdown
+```
+
+The script loads `backend/.env` and supports `EMBEDDING_MODEL_NAME`,
+`MILVUS_URI`, `MILVUS_TOKEN`, and `MILVUS_COLLECTION_NAME`. Long Markdown files
+are split into chunks before embedding. In Python, use `EmbeddingService.embed`
+to encode a query and `VectorStore.query(embedding, top_k=5)` to retrieve
+matching `SearchResult` records.
 
 ### Language model setup
 
@@ -110,7 +130,7 @@ Set `LLAMA_BINARY_PATH` to the resulting `llama-cli.exe`, set
 $env:LLM_MODE = "local_llama"
 $env:LLAMA_BINARY_PATH = "C:\path\to\llama.cpp\build\bin\Release\llama-cli.exe"
 $env:LLAMA_MODEL_PATH = "C:\path\to\models\model.gguf"
-python -m uvicorn app.main:app --reload
+uv run --project backend python -m uvicorn app.main:app --reload
 ```
 
 This provider launches llama.cpp for one turn per request with a configured
@@ -137,13 +157,13 @@ HTTP 502 rather than a success-shaped chat response. To test a real configured
 provider from the repository root, run:
 
 ```powershell
-python backend\scripts\test_llm_client.py
+uv run --project backend python backend\scripts\test_llm_client.py
 ```
 
 Automated adapter and route tests can be run with:
 
 ```powershell
-python -m pytest backend/tests -q
+uv run --project backend --group dev pytest backend/tests -q
 ```
 
 PostgreSQL starts with the default Compose stack. Start Redis (an optional service) with:
@@ -161,17 +181,17 @@ docker compose -f infra/docker-compose.yml up -d postgres
 ```
 
 Then run migrations from `backend/` (install dependencies first with
-`pip install -r requirements.txt`):
+`uv sync --project backend`):
 
 ```sh
-python -m alembic upgrade head
+uv run --project backend python -m alembic upgrade head
 ```
 
 To create or regenerate a migration after changing models, use:
 
 ```sh
-python -m alembic revision --autogenerate -m "create users and sessions"
-python -m alembic upgrade head
+uv run --project backend python -m alembic revision --autogenerate -m "create users and sessions"
+uv run --project backend python -m alembic upgrade head
 ```
 
 The default local connection is
@@ -182,7 +202,7 @@ running in Compose, it connects to the `postgres` service automatically.
 Create a user interactively from `backend/` after upgrading the database:
 
 ```sh
-python -m scripts.create_user
+uv run --project backend python -m scripts.create_user
 ```
 
 The script prompts for an email and password and stores only the Argon2 password
@@ -192,7 +212,7 @@ To remove one disposable test user and that user's assistant sessions, run this
 from `backend/` and confirm the exact email when prompted:
 
 ```sh
-python -m scripts.delete_user
+uv run --project backend python -m scripts.delete_user
 ```
 
 This targets only the email you enter; it does not clear other users or remove

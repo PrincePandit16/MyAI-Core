@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     llm_max_new_tokens: int = Field(default=256, gt=0)
     groq_api_key: str = ""
 
+    # Document search configuration
+    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    milvus_uri: str = "http://localhost:19530"
+    milvus_token: str = ""
+    milvus_collection_name: str = "documents"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

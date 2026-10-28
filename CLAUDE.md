@@ -5,16 +5,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Backend (FastAPI)
-- **Install dependencies**: `cd backend && pip install -r requirements.txt`
-- **Run server**: `cd backend && uvicorn app.main:app --reload`
-- **Run all tests**: `pytest` (configured via `pytest.ini`)
-- **Run single test**: `pytest backend/tests/test_file.py`
+- **Install dependencies**: `uv sync --project backend --group dev`
+- **Run server**: `uv run --project backend uvicorn app.main:app --reload`
+- **Run all tests**: `uv run --project backend pytest`
+- **Run single test**: `uv run --project backend pytest backend/tests/test_file.py`
 - **DB Migrations**:
-  - Upgrade: `cd backend && python -m alembic upgrade head`
-  - Autogenerate: `cd backend && python -m alembic revision --autogenerate -m "message"`
+  - Upgrade: `uv run --project backend python -m alembic upgrade head`
+  - Autogenerate: `uv run --project backend python -m alembic revision --autogenerate -m "message"`
 - **User Management**:
-  - Create user: `cd backend && python -m scripts.create_user`
-  - Delete user: `cd backend && python -m scripts.delete_user`
+  - Create user: `uv run --project backend python -m scripts.create_user`
+  - Delete user: `uv run --project backend python -m scripts.delete_user`
 
 ### Frontend (React + Vite + TS)
 - **Install dependencies**: `cd frontend && npm install`

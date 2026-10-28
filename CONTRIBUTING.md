@@ -4,7 +4,7 @@ Thanks for contributing. Please open an issue for significant changes before sta
 
 ## Development checks
 
-- Backend: create an environment with `uv venv backend/.venv`, install test dependencies with `uv pip install --python backend/.venv/Scripts/python.exe -r backend/requirements-dev.txt` on Windows (use `backend/.venv/bin/python` on Unix), then run `pytest backend/tests`.
+- Backend: from the repository root, run `uv sync --project backend --group dev`, then `uv run --project backend pytest backend/tests`.
 - Frontend: from `frontend/`, run `npm install` and `npm run build`.
 - Local stack: from the repository root, run `docker compose -f infra/docker-compose.yml up --build`.
 
