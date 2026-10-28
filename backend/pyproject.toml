@@ -22,6 +22,7 @@ dependencies = [
     # Passlib 1.7.4's bcrypt backend self-test is incompatible with bcrypt 5.
     "bcrypt>=4,<4.1",
     "pytest-asyncio>=1.4.1",
+    "prometheus-client>=0.26.0",
 ]
 
 [dependency-groups]

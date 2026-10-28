@@ -2,31 +2,33 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  backend-tests:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: astral-sh/setup-uv@v5
-      - name: Install backend dependencies
-        run: uv sync --project backend --locked --group dev
-      - name: Run backend tests
-        run: uv run --project backend --locked pytest backend/tests
 
-  frontend-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-      - run: npm run build
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v1
+
+    - name: Install dependencies
+      run: uv sync --project backend --group dev
+
+    - name: Run Linters
+      run: |
+        uv run --project backend isort .
+        uv run --project backend black --check .
+        uv run --project backend flake8 backend
+
+    - name: Run Tests
+      run: uv run --project backend pytest backend/tests

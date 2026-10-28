@@ -8,12 +8,18 @@ from pydantic.v1 import BaseSettings, Field
 class Settings(BaseSettings):
     app_name: str = "Personal AI Assistant API"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
-    database_url: str = "postgresql+psycopg://assistant:assistant@localhost:5432/assistant"
+    database_url: str = (
+        "postgresql+psycopg://assistant:assistant@localhost:5432/assistant"
+    )
 
     jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     jwt_access_token_expire_minutes: int = 30
 
+    # Telemetry
+    telemetry_enabled: bool = False
+
     # LLM Configuration
+
     llm_mode: Literal["local_llama", "http_tgi", "groq"] = "local_llama"
     tgi_endpoint: str = "http://localhost:8080/generate"
     llama_binary_path: str = "./llama-cli"
