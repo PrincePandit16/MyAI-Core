@@ -1,11 +1,12 @@
 import logging
-from logging.handlers import RotatingFileHandler
 
+from app.api.auth import get_current_user
 from app.api.auth import router as auth_router
 from app.core.config import settings
 from app.core.security.logging_utils import RedactingFormatter
+from app.models.user import User
 from app.services.llm_client import llm_client
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from prometheus_client import Counter, Histogram, make_asgi_app
 from pydantic import BaseModel
 
@@ -54,7 +55,9 @@ def health() -> dict[str, str]:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(
+    request: ChatRequest, current_user: User = Depends(get_current_user)
+) -> ChatResponse:
     logger.info("Received chat request for session %s", request.session_id)
     try:
         with LLM_RESPONSE_TIME.time():

@@ -5,14 +5,14 @@ Revises: 20261023_0001
 Create Date: 2026-10-23 19:45:04.703519
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
-
-revision: str = '4a78d74c2a25'
-down_revision: Union[str, None] = '20261023_0001'
+revision: str = "4a78d74c2a25"
+down_revision: Union[str, None] = "20261023_0001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

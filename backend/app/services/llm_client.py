@@ -3,15 +3,13 @@ import logging
 from typing import Protocol
 
 import httpx
-
 from app.core.config import Settings, settings
 
 logger = logging.getLogger(__name__)
 
 
 class LLMProvider(Protocol):
-    async def generate(self, prompt: str) -> str:
-        ...
+    async def generate(self, prompt: str) -> str: ...
 
 
 class LocalLlamaProvider:
@@ -54,7 +52,11 @@ class LocalLlamaProvider:
 
             if process.returncode != 0:
                 error_msg = stderr.decode().strip()
-                logger.error("llama.cpp process failed with return code %s: %s", process.returncode, error_msg)
+                logger.error(
+                    "llama.cpp process failed with return code %s: %s",
+                    process.returncode,
+                    error_msg,
+                )
                 raise RuntimeError(f"llama.cpp failed: {error_msg}")
 
             return stdout.decode().strip()
@@ -142,7 +144,7 @@ class GroqProvider:
     async def generate(self, prompt: str) -> str:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         # First, try to find an available model from the account
@@ -154,19 +156,28 @@ class GroqProvider:
             for model_name in available:
                 payload = {
                     "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}]
+                    "messages": [{"role": "user", "content": prompt}],
                 }
                 try:
                     async with httpx.AsyncClient(timeout=60.0) as client:
-                        response = await client.post(self.url, headers=headers, json=payload)
+                        response = await client.post(
+                            self.url, headers=headers, json=payload
+                        )
                         if response.status_code == 200:
                             data = response.json()
                             return data["choices"][0]["message"]["content"].strip()
                         elif "model_terms_required" in response.text:
-                            logger.warning("Model %s requires terms acceptance, skipping...", model_name)
+                            logger.warning(
+                                "Model %s requires terms acceptance, skipping...",
+                                model_name,
+                            )
                             continue
                         else:
-                            logger.warning("Model %s returned error %s, skipping...", model_name, response.status_code)
+                            logger.warning(
+                                "Model %s returned error %s, skipping...",
+                                model_name,
+                                response.status_code,
+                            )
                             continue
                 except Exception as e:
                     logger.warning("Error trying model %s: %s", model_name, str(e))
@@ -178,7 +189,7 @@ class GroqProvider:
 
         payload = {
             "model": model_to_use,
-            "messages": [{"role": "user", "content": prompt}]
+            "messages": [{"role": "user", "content": prompt}],
         }
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -189,6 +200,7 @@ class GroqProvider:
                 return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
             raise RuntimeError(f"All attempts failed. Final error: {str(e)}")
+
 
 class LLMClient:
     def __init__(self, config: Settings | None = None):
@@ -214,6 +226,7 @@ class LLMClient:
 
     async def generate(self, prompt: str) -> str:
         return await self.provider.generate(prompt)
+
 
 # Singleton instance
 llm_client = LLMClient()

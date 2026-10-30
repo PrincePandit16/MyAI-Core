@@ -1,9 +1,22 @@
-from fastapi.testclient import TestClient
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from app.api.auth import get_current_user
 from app.main import app
+from app.models.user import User
+from fastapi.testclient import TestClient
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def authenticated_chat_user() -> Iterator[None]:
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1, email="test@example.com"
+    )
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_health() -> None:

@@ -1,7 +1,7 @@
 import AuthForm from "../components/AuthForm";
 
 type LoginProps = {
-  onAuthenticated: (token: string) => void;
+  onAuthenticated: () => void;
 };
 
 export default function Login({ onAuthenticated }: LoginProps) {

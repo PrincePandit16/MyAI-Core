@@ -1,7 +1,6 @@
+from app.models.session import AssistantSession
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from app.models.session import AssistantSession
 
 
 def create_session(db: Session, *, user_id: int) -> AssistantSession:

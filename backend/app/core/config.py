@@ -9,11 +9,11 @@ class Settings(BaseSettings):
     app_name: str = "Personal AI Assistant API"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     database_url: str = (
-        "postgresql+psycopg://assistant:assistant@localhost:5432/assistant"
+        "postgresql+psycopg://assistant:change-me@localhost:5432/assistant"
     )
-
     jwt_secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     jwt_access_token_expire_minutes: int = 30
+    cookie_secure: bool = False
 
     # Telemetry
     telemetry_enabled: bool = False

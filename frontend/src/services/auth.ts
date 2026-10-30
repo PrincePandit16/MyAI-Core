@@ -1,13 +1,2 @@
-const TOKEN_STORAGE_KEY = "access_token";
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_STORAGE_KEY);
-}
-
-export function saveToken(token: string): void {
-  localStorage.setItem(TOKEN_STORAGE_KEY, token);
-}
-
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
-}
+// Authentication is cookie-based. Tokens are stored only in an HttpOnly cookie by the API.
+export function clearToken(): void {}

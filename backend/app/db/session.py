@@ -1,9 +1,8 @@
 from collections.abc import Iterator
 
+from app.core.config import settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
-
-from app.core.config import settings
 
 
 class Base(DeclarativeBase):

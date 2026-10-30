@@ -11,6 +11,7 @@ REDACTION_PATTERNS = {
     "email": r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
 }
 
+
 def redact_sensitive_info(message: Any) -> str:
     """
     Redacts sensitive information from a string using predefined patterns.
@@ -24,10 +25,12 @@ def redact_sensitive_info(message: Any) -> str:
 
     return redacted_text
 
+
 class RedactingFormatter(logging.Formatter):
     """
     Custom logging formatter that redacts sensitive information from all logs.
     """
+
     def format(self, record: logging.LogRecord) -> str:
         original_msg = super().format(record)
         return redact_sensitive_info(original_msg)

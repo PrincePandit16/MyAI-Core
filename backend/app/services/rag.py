@@ -3,12 +3,13 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
+from app.core.config import settings
 from app.services.embedding import EmbeddingService
 from app.services.llm_client import LLMClient, llm_client
-from app.services.vector_store import VectorStore, SearchResult
-from app.core.config import settings
+from app.services.vector_store import SearchResult, VectorStore
 
 logger = logging.getLogger(__name__)
+
 
 class RAGService:
     def __init__(
@@ -21,12 +22,7 @@ class RAGService:
         self.vector_store = vector_store
         self.llm_client = llm_client
 
-    async def query(
-        self,
-        prompt: str,
-        session_id: str,
-        top_k: int = 5
-    ) -> str:
+    async def query(self, prompt: str, session_id: str, top_k: int = 5) -> str:
         """
         Performs a RAG query:
         1. Embeds the prompt.
@@ -40,8 +36,7 @@ class RAGService:
             # 1. Retrieve relevant contexts
             query_embedding = self.embedding_service.embed(prompt)
             search_results: list[SearchResult] = self.vector_store.query(
-                embedding=query_embedding,
-                top_k=top_k
+                embedding=query_embedding, top_k=top_k
             )
 
             # 2. Build composed prompt
@@ -64,14 +59,19 @@ class RAGService:
             logger.exception("Error in RAG pipeline for session %s", session_id)
             raise RuntimeError(f"RAG pipeline failed: {str(e)}") from e
 
+
 # Dependencies for the singleton
 def get_embedding_service():
     from app.services.embedding import EmbeddingService
+
     return EmbeddingService()
+
 
 def get_vector_store():
     from app.services.vector_store import VectorStore
+
     return VectorStore()
+
 
 # Singleton instance
 def get_rag_service() -> RAGService:

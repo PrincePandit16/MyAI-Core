@@ -2,117 +2,102 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  labels:
-    app: backend
 spec:
   replicas: 2
   selector:
-    matchLabels:
-      app: backend
+    matchLabels: {app: backend}
   template:
     metadata:
-      labels:
-        app: backend
+      labels: {app: backend}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
       containers:
-      - name: backend
-        image: ai-assistant-backend:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: backend-secrets
-              key: database_url
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: backend-secrets
-              key: jwt_secret
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: backend
+          image: ghcr.io/OWNER/myai-core-backend:RELEASE_TAG
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          ports: [{containerPort: 8000}]
+          resources:
+            requests: {cpu: "250m", memory: "256Mi"}
+            limits: {cpu: "1", memory: "1Gi"}
+          envFrom:
+            - secretRef: {name: backend-secrets}
+          readinessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+            initialDelaySeconds: 30
 ---
 apiVersion: v1
 kind: Service
-metadata:
-  name: backend
+metadata: {name: backend}
 spec:
-  selector:
-    app: backend
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
+  selector: {app: backend}
+  ports: [{port: 80, targetPort: 8000}]
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  labels:
-    app: frontend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
-    matchLabels:
-      app: frontend
+    matchLabels: {app: frontend}
   template:
     metadata:
-      labels:
-        app: frontend
+      labels: {app: frontend}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
       containers:
-      - name: frontend
-        image: ai-assistant-frontend:latest
-        ports:
-        - containerPort: 5173
-        env:
-        - name: API_PROXY_TARGET
-          value: "http://backend"
+        - name: frontend
+          image: ghcr.io/OWNER/myai-core-frontend:RELEASE_TAG
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+          ports: [{containerPort: 5173}]
+          resources:
+            requests: {cpu: "50m", memory: "64Mi"}
+            limits: {cpu: "250m", memory: "256Mi"}
 ---
 apiVersion: v1
 kind: Service
-metadata:
-  name: frontend
+metadata: {name: frontend}
 spec:
-  selector:
-    app: frontend
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 5173
+  selector: {app: frontend}
+  ports: [{port: 80, targetPort: 5173}]
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ai-assistant-ingress
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
 spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: ["assistant.example.com"]
+      secretName: ai-assistant-tls
   rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend
-            port:
-            number: 80
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend
-            port:
-            number: 80
+    - host: assistant.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: frontend, port: {number: 80}}
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: {name: backend, port: {number: 80}}
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service: {name: backend, port: {number: 80}}

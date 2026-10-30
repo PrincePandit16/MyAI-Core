@@ -2,14 +2,13 @@ from collections.abc import Iterator
 from datetime import datetime
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
-
 from app.crud import session as session_crud
 from app.crud import user as user_crud
 from app.db.session import Base
 from app.models import AssistantSession, User
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 
 @pytest.fixture
@@ -38,7 +37,9 @@ def test_user_and_session_crud(db_session: Session) -> None:
 
     assistant_session = session_crud.create_session(db_session, user_id=user.id)
     assert isinstance(assistant_session.created_at, datetime)
-    assert session_crud.get_session(db_session, assistant_session.id) is assistant_session
+    assert (
+        session_crud.get_session(db_session, assistant_session.id) is assistant_session
+    )
     assert session_crud.get_user_sessions(db_session, user.id) == [assistant_session]
 
     user_crud.update_user(db_session, user, email="updated@example.com")

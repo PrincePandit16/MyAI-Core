@@ -1,20 +1,26 @@
+from collections import defaultdict
+from threading import Lock
+from time import monotonic
 from typing import Annotated
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr, Field, field_validator
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.crud import user as user_crud
 from app.db.session import get_db
 from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 bearer_scheme = HTTPBearer(auto_error=False)
+_login_failures: dict[str, list[float]] = defaultdict(list)
+_login_failures_lock = Lock()
+_LOGIN_WINDOW_SECONDS = 15 * 60
+_LOGIN_LIMIT = 5
 
 
 class AuthRequest(BaseModel):
@@ -39,7 +45,9 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 def register(request: AuthRequest, db: Annotated[Session, Depends(get_db)]) -> User:
     email = str(request.email).lower()
     if user_crud.get_user_by_email(db, email) is not None:
@@ -63,19 +71,51 @@ def register(request: AuthRequest, db: Annotated[Session, Depends(get_db)]) -> U
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: AuthRequest, db: Annotated[Session, Depends(get_db)]) -> TokenResponse:
-    user = user_crud.get_user_by_email(db, str(request.email).lower())
+def login(
+    request: AuthRequest, response: Response, db: Annotated[Session, Depends(get_db)]
+) -> TokenResponse:
+    email = str(request.email).lower()
+    now = monotonic()
+    with _login_failures_lock:
+        recent = [
+            timestamp
+            for timestamp in _login_failures[email]
+            if now - timestamp < _LOGIN_WINDOW_SECONDS
+        ]
+        _login_failures[email] = recent
+        if len(recent) >= _LOGIN_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many login attempts; try again later",
+            )
+
+    user = user_crud.get_user_by_email(db, email)
     if user is None or not verify_password(request.password, user.hashed_password):
+        with _login_failures_lock:
+            _login_failures[email].append(monotonic())
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return TokenResponse(access_token=create_access_token(subject=str(user.id)))
+    with _login_failures_lock:
+        _login_failures.pop(email, None)
+
+    token = create_access_token(subject=str(user.id))
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.jwt_access_token_expire_minutes * 60,
+    )
+    return TokenResponse(access_token=token)
 
 
 def get_current_user(
+    http_request: Request,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None,
         Depends(bearer_scheme),
@@ -87,12 +127,17 @@ def get_current_user(
         detail="Invalid or expired access token",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if credentials is None:
+    token = (
+        credentials.credentials
+        if credentials is not None
+        else http_request.cookies.get("access_token")
+    )
+    if token is None:
         raise unauthorized
 
     try:
         payload = jwt.decode(
-            credentials.credentials,
+            token,
             settings.jwt_secret_key,
             algorithms=["HS256"],
         )
@@ -108,6 +153,14 @@ def get_current_user(
     if user is None:
         raise unauthorized
     return user
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response) -> Response:
+    response.delete_cookie(
+        "access_token", httponly=True, secure=settings.cookie_secure, samesite="lax"
+    )
+    return response
 
 
 @router.get("/me", response_model=UserResponse)

@@ -1,7 +1,7 @@
 import AuthForm from "../components/AuthForm";
 
 type RegisterProps = {
-  onAuthenticated: (token: string) => void;
+  onAuthenticated: () => void;
 };
 
 export default function Register({ onAuthenticated }: RegisterProps) {

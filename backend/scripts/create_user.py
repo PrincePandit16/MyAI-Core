@@ -1,10 +1,9 @@
 from getpass import getpass
 
-from pwdlib import PasswordHash
-from sqlalchemy.exc import IntegrityError
-
 from app.crud.user import create_user
 from app.db.session import SessionLocal
+from pwdlib import PasswordHash
+from sqlalchemy.exc import IntegrityError
 
 
 def main() -> None:

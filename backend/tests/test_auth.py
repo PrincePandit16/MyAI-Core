@@ -1,19 +1,20 @@
 from collections.abc import Iterator
 
 import pytest
-from pwdlib import PasswordHash
+from app.api.auth import get_current_user
+from app.core.security import verify_password
+from app.db.session import Base, get_db
+from app.main import app
 from fastapi.testclient import TestClient
+from pwdlib import PasswordHash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.security import verify_password
-from app.db.session import Base, get_db
-from app.main import app
-
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
+    app.dependency_overrides.pop(get_current_user, None)
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

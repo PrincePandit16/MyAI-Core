@@ -1,22 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Chat from "./page/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import { clearToken, getToken, saveToken } from "./services/auth";
+import api from "./api/client";
 
 export default function App() {
-  const [token, setToken] = useState(getToken);
-  const isAuthenticated = Boolean(token);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  function handleAuthenticated(accessToken: string) {
-    saveToken(accessToken);
-    setToken(accessToken);
+  useEffect(() => {
+    api.get("/auth/me").then(() => setIsAuthenticated(true)).catch(() => setIsAuthenticated(false));
+  }, []);
+
+  function handleAuthenticated() {
+    setIsAuthenticated(true);
   }
 
   function handleLogout() {
-    clearToken();
-    setToken(null);
+    api.post("/auth/logout").finally(() => setIsAuthenticated(false));
   }
 
   return (

@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
@@ -30,5 +33,20 @@ jobs:
         uv run --project backend black --check .
         uv run --project backend flake8 backend
 
+    - name: Security dependency scan
+      run: |
+        uv export --project backend --no-dev --no-hashes -o requirements-ci.txt
+        uv tool run pip-audit -r requirements-ci.txt
+        cd frontend && npm audit --audit-level=high
+
+    - name: Static security scan
+      run: uv tool run bandit -q -r backend/app
+
     - name: Run Tests
       run: uv run --project backend pytest backend/tests
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm ci
+        npm run build

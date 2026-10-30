@@ -1,7 +1,6 @@
+from app.models.user import User
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from app.models.user import User
 
 
 def create_user(db: Session, *, email: str, hashed_password: str) -> User:

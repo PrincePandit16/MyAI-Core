@@ -2,8 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app.core.config import Settings
-from app.services.llm_client import (GroqProvider, LLMClient,
-                                     LocalLlamaProvider, TGIHttpProvider)
+from app.services.llm_client import (
+    GroqProvider,
+    LLMClient,
+    LocalLlamaProvider,
+    TGIHttpProvider,
+)
 
 
 @pytest.fixture

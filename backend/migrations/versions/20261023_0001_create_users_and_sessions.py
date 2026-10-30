@@ -5,10 +5,11 @@ Revises:
 Create Date: 2026-10-23
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision: str = "20261023_0001"
 down_revision: Union[str, None] = None

@@ -4,11 +4,35 @@ A local-development starter for a personal AI assistant, with a FastAPI backend,
 
 ## 🚀 Quick Start
 
-The fastest way to get the entire system running is using Docker Compose:
+### Windows (recommended)
 
-```sh
+Prerequisites: [Docker Desktop](https://www.docker.com/products/docker-desktop/) and Git.
+
+```powershell
+git clone https://github.com/PrincePandit16/MyAI-Core.git
+cd MyAI-Core
+powershell -ExecutionPolicy Bypass -File .\scripts\setup_local.ps1
 docker compose -f infra/docker-compose.yml up --build
 ```
+
+The setup script creates `.env` with secure random local secrets. Docker starts PostgreSQL, the backend, frontend, Milvus, and monitoring services.
+
+To stop the application:
+
+```powershell
+docker compose -f infra/docker-compose.yml down
+```
+
+### macOS/Linux
+
+```sh
+git clone https://github.com/PrincePandit16/MyAI-Core.git
+cd MyAI-Core
+cp .env.example .env
+docker compose -f infra/docker-compose.yml up --build
+```
+
+The example configuration is for local development only. Replace its placeholder secrets before production deployment.
 
 - **Frontend**: [http://localhost:5173](http://localhost:5173)
 - **Backend API**: [http://localhost:8000](http://localhost:8000)

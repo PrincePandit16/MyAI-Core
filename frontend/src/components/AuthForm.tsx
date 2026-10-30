@@ -6,7 +6,7 @@ type AuthMode = "login" | "register";
 
 type AuthFormProps = {
   mode: AuthMode;
-  onAuthenticated: (token: string) => void;
+  onAuthenticated: () => void;
 };
 
 type TokenResponse = {
@@ -32,7 +32,7 @@ export default function AuthForm({ mode, onAuthenticated }: AuthFormProps) {
         await api.post("/auth/register", credentials);
       }
       const response = await api.post<TokenResponse>("/auth/login", credentials);
-      onAuthenticated(response.data.access_token);
+      onAuthenticated();
     } catch (requestError) {
       setError(
         getApiErrorMessage(

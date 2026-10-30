@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from app.core.config import settings
 from passlib.context import CryptContext
 from pwdlib import PasswordHash
-
-from app.core.config import settings
 
 _password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _legacy_password_hash = PasswordHash.recommended()
